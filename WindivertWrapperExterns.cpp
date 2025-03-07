@@ -47,7 +47,7 @@ extern "C" __declspec(dllexport) BOOL WINAPI WindivertRecv(
     UINT* recvLen,
     WINDIVERT_ADDRESS* address
 ) {
-    std::cout << "WindivertRecv called" << std::endl;
+    //std::cout << "WindivertRecv called" << std::endl;
     try {
         return wrapper.Recv(address, packet, packetLen, recvLen);
     }
@@ -71,7 +71,7 @@ extern "C" __declspec(dllexport) BOOL WINAPI WindivertRecvEx(
     UINT* addrLen,
     LPOVERLAPPED lpOverlapped
 ) {
-    std::cout << "WindivertRecvEx called" << std::endl;
+    //std::cout << "WindivertRecvEx called" << std::endl;
     try {
         return wrapper.RecvEx(address, packet, packetLen, recvLen, flags, addrLen, lpOverlapped);
     }
