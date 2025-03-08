@@ -26,8 +26,5 @@
     <ClCompile Include="WindivertWrapper.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="WindivertWrapperExterns.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
 </Project>

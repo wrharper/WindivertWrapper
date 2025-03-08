@@ -1,37 +1,34 @@
 #include "WindivertWrapper.h"
-#include <iostream>
 #include <stdexcept>
 #include <string> // For std::to_string
+#include <iostream> // For std::cerr and std::endl
 
 WindivertWrapper::WindivertWrapper() : handle(INVALID_HANDLE_VALUE), hWinDivert(NULL) {
-    std::cout << "Initializing WindivertWrapper" << std::endl;
     try {
         LoadWinDivertFunctions();
-        std::cout << "WindivertWrapper initialized successfully" << std::endl;
     }
     catch (const std::exception& ex) {
-        std::cerr << "Exception during WindivertWrapper initialization: " << ex.what() << std::endl;
-        throw; // Rethrow to indicate initialization failure
+        throw std::runtime_error("Exception during WindivertWrapper initialization: " + std::string(ex.what()));
     }
 }
 
 WindivertWrapper::~WindivertWrapper() {
     if (handle != INVALID_HANDLE_VALUE) {
         WinDivertClose(handle);
+        handle = INVALID_HANDLE_VALUE;
     }
     if (hWinDivert) {
         FreeLibrary(hWinDivert);
+        hWinDivert = NULL;
     }
 }
 
 void WindivertWrapper::LoadWinDivertFunctions() {
-    std::cout << "Attempting to load WinDivert.dll" << std::endl;
     hWinDivert = LoadLibrary(TEXT("WinDivert.dll"));
     if (!hWinDivert) {
         DWORD error = GetLastError();
         throw std::runtime_error("Failed to load WinDivert.dll. Error: " + std::to_string(error));
     }
-    std::cout << "Loaded WinDivert.dll" << std::endl;
 
     WinDivertOpen = (WinDivertOpen_t)GetProcAddress(hWinDivert, "WinDivertOpen");
     WinDivertClose = (WinDivertClose_t)GetProcAddress(hWinDivert, "WinDivertClose");
@@ -43,15 +40,10 @@ void WindivertWrapper::LoadWinDivertFunctions() {
     WinDivertSetParam = (WinDivertSetParam_t)GetProcAddress(hWinDivert, "WinDivertSetParam");
     WinDivertGetParam = (WinDivertGetParam_t)GetProcAddress(hWinDivert, "WinDivertGetParam");
 
-    if (!WinDivertOpen) throw std::runtime_error("Failed to get WinDivertOpen address. Error: " + std::to_string(GetLastError()));
-    if (!WinDivertClose) throw std::runtime_error("Failed to get WinDivertClose address. Error: " + std::to_string(GetLastError()));
-    if (!WinDivertRecv) throw std::runtime_error("Failed to get WinDivertRecv address. Error: " + std::to_string(GetLastError()));
-    if (!WinDivertRecvEx) throw std::runtime_error("Failed to get WinDivertRecvEx address. Error: " + std::to_string(GetLastError()));
-    if (!WinDivertSend) throw std::runtime_error("Failed to get WinDivertSend address. Error: " + std::to_string(GetLastError()));
-    if (!WinDivertSendEx) throw std::runtime_error("Failed to get WinDivertSendEx address. Error: " + std::to_string(GetLastError()));
-    if (!WinDivertShutdown) throw std::runtime_error("Failed to get WinDivertShutdown address. Error: " + std::to_string(GetLastError()));
-    if (!WinDivertSetParam) throw std::runtime_error("Failed to get WinDivertSetParam address. Error: " + std::to_string(GetLastError()));
-    if (!WinDivertGetParam) throw std::runtime_error("Failed to get WinDivertGetParam address. Error: " + std::to_string(GetLastError()));
+    if (!WinDivertOpen || !WinDivertClose || !WinDivertRecv || !WinDivertRecvEx || !WinDivertSend || !WinDivertSendEx || !WinDivertShutdown ||
+        !WinDivertSetParam || !WinDivertGetParam) {
+        throw std::runtime_error("Failed to load one or more WinDivert functions.");
+    }
 
     WinDivertHelperHashPacket = (WinDivertHelperHashPacket_t)GetProcAddress(hWinDivert, "WinDivertHelperHashPacket");
     WinDivertHelperParsePacket = (WinDivertHelperParsePacket_t)GetProcAddress(hWinDivert, "WinDivertHelperParsePacket");
@@ -74,39 +66,17 @@ void WindivertWrapper::LoadWinDivertFunctions() {
     WinDivertHelperNtohIPv6Address = (WinDivertHelperNtohIPv6Address_t)GetProcAddress(hWinDivert, "WinDivertHelperNtohIPv6Address");
     WinDivertHelperHtonIPv6Address = (WinDivertHelperHtonIPv6Address_t)GetProcAddress(hWinDivert, "WinDivertHelperHtonIPv6Address");
 
-    if (!WinDivertHelperHashPacket) throw std::runtime_error("Failed to get WinDivertHelperHashPacket address. Error: " + std::to_string(GetLastError()));
-    if (!WinDivertHelperParsePacket) throw std::runtime_error("Failed to get WinDivertHelperParsePacket address. Error: " + std::to_string(GetLastError()));
-    if (!WinDivertHelperParseIPv4Address) throw std::runtime_error("Failed to get WinDivertHelperParseIPv4Address address. Error: " + std::to_string(GetLastError()));
-    if (!WinDivertHelperParseIPv6Address) throw std::runtime_error("Failed to get WinDivertHelperParseIPv6Address address. Error: " + std::to_string(GetLastError()));
-    if (!WinDivertHelperFormatIPv4Address) throw std::runtime_error("Failed to get WinDivertHelperFormatIPv4Address address. Error: " + std::to_string(GetLastError()));
-    if (!WinDivertHelperFormatIPv6Address) throw std::runtime_error("Failed to get WinDivertHelperFormatIPv6Address address. Error: " + std::to_string(GetLastError()));
-    if (!WinDivertHelperCalcChecksums) throw std::runtime_error("Failed to get WinDivertHelperCalcChecksums address. Error: " + std::to_string(GetLastError()));
-    if (!WinDivertHelperDecrementTTL) throw std::runtime_error("Failed to get WinDivertHelperDecrementTTL address. Error: " + std::to_string(GetLastError()));
-    if (!WinDivertHelperCompileFilter) throw std::runtime_error("Failed to get WinDivertHelperCompileFilter address. Error: " + std::to_string(GetLastError()));
-    if (!WinDivertHelperEvalFilter) throw std::runtime_error("Failed to get WinDivertHelperEvalFilter address. Error: " + std::to_string(GetLastError()));
-    if (!WinDivertHelperFormatFilter) throw std::runtime_error("Failed to get WinDivertHelperFormatFilter address. Error: " + std::to_string(GetLastError()));
-    if (!WinDivertHelperNtohs) throw std::runtime_error("Failed to get WinDivertHelperNtohs address. Error: " + std::to_string(GetLastError()));
-    if (!WinDivertHelperHtons) throw std::runtime_error("Failed to get WinDivertHelperHtons address. Error: " + std::to_string(GetLastError()));
-    if (!WinDivertHelperNtohl) throw std::runtime_error("Failed to get WinDivertHelperNtohl address. Error: " + std::to_string(GetLastError()));
-    if (!WinDivertHelperHtonl) throw std::runtime_error("Failed to get WinDivertHelperHtonl address. Error: " + std::to_string(GetLastError()));
-    if (!WinDivertHelperNtohll) throw std::runtime_error("Failed to get WinDivertHelperNtohll address. Error: " + std::to_string(GetLastError()));
-    if (!WinDivertHelperHtonll) throw std::runtime_error("Failed to get WinDivertHelperHtonll address. Error: " + std::to_string(GetLastError()));
-    if (!WinDivertHelperNtohIPv6Address) throw std::runtime_error("Failed to get WinDivertHelperNtohIPv6Address address. Error: " + std::to_string(GetLastError()));
-    if (!WinDivertHelperHtonIPv6Address) throw std::runtime_error("Failed to get WinDivertHelperHtonIPv6Address address. Error: " + std::to_string(GetLastError()));
-
-    std::cout << "WinDivert functions loaded successfully" << std::endl;
+    if (!WinDivertHelperHashPacket || !WinDivertHelperParsePacket || !WinDivertHelperParseIPv4Address || !WinDivertHelperParseIPv6Address ||
+        !WinDivertHelperFormatIPv4Address || !WinDivertHelperFormatIPv6Address || !WinDivertHelperCalcChecksums || !WinDivertHelperDecrementTTL ||
+        !WinDivertHelperCompileFilter || !WinDivertHelperEvalFilter || !WinDivertHelperFormatFilter || !WinDivertHelperNtohs || !WinDivertHelperHtons ||
+        !WinDivertHelperNtohl || !WinDivertHelperHtonl || !WinDivertHelperNtohll || !WinDivertHelperHtonll || !WinDivertHelperNtohIPv6Address ||
+        !WinDivertHelperHtonIPv6Address) {
+        throw std::runtime_error("Failed to load one or more WinDivert helper functions.");
+    }
 }
 
 HANDLE WindivertWrapper::Open(const char* filter, WINDIVERT_LAYER layer, INT16 priority, UINT64 flags) {
-    std::cout << "Opening WinDivert with filter: " << filter << ", layer: " << layer << ", priority: " << priority << ", flags: " << flags << std::endl;
-    HANDLE handle = WinDivertOpen(filter, layer, priority, flags);
-    if (handle == INVALID_HANDLE_VALUE) {
-        DWORD error = GetLastError();
-        std::cerr << "WinDivertOpen failed. Error: " << std::to_string(static_cast<unsigned long long>(error)) << std::endl;
-    }
-    else {
-        std::cout << "WinDivertOpen succeeded. Handle: " << handle << std::endl;
-    }
+    handle = WinDivertOpen(filter, layer, priority, flags);
     return handle;
 }
 
@@ -114,12 +84,14 @@ BOOL WindivertWrapper::Close() {
     if (handle != INVALID_HANDLE_VALUE) {
         WinDivertClose(handle);
         handle = INVALID_HANDLE_VALUE;
-        std::cout << "WinDivert handle closed successfully." << std::endl;
     }
     return TRUE;
 }
 
 BOOL WindivertWrapper::Recv(WINDIVERT_ADDRESS* address, PVOID packet, UINT packetLen, UINT* recvLen) {
+    if (handle == INVALID_HANDLE_VALUE) {
+        return FALSE;
+    }
     return WinDivertRecv(handle, packet, packetLen, recvLen, address);
 }
 
@@ -184,7 +156,11 @@ BOOL WindivertWrapper::HelperDecrementTTL(VOID* pPacket, UINT packetLen) {
 }
 
 BOOL WindivertWrapper::HelperCompileFilter(const char* filter, WINDIVERT_LAYER layer, char* object, UINT objLen, const char** errorStr, UINT* errorPos) {
-    return WinDivertHelperCompileFilter(filter, layer, object, objLen, errorStr, errorPos);
+    BOOL result = WinDivertHelperCompileFilter(filter, layer, object, objLen, errorStr, errorPos);
+    if (!result && errorStr) {
+        std::cerr << "HelperCompileFilter failed. Error: " << *errorStr << " at position: " << *errorPos << std::endl;
+    }
+    return result;
 }
 
 BOOL WindivertWrapper::HelperEvalFilter(const char* filter, const VOID* pPacket, UINT packetLen, const WINDIVERT_ADDRESS* pAddr) {

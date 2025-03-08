@@ -47,7 +47,7 @@ extern "C" __declspec(dllexport) BOOL WINAPI WindivertRecv(
     UINT* recvLen,
     WINDIVERT_ADDRESS* address
 ) {
-    //std::cout << "WindivertRecv called" << std::endl;
+    std::cout << "WindivertRecv called" << std::endl;
     try {
         return wrapper.Recv(address, packet, packetLen, recvLen);
     }
@@ -61,6 +61,7 @@ extern "C" __declspec(dllexport) BOOL WINAPI WindivertRecv(
     }
 }
 
+
 extern "C" __declspec(dllexport) BOOL WINAPI WindivertRecvEx(
     HANDLE handle,
     PVOID packet,
@@ -71,7 +72,11 @@ extern "C" __declspec(dllexport) BOOL WINAPI WindivertRecvEx(
     UINT* addrLen,
     LPOVERLAPPED lpOverlapped
 ) {
-    //std::cout << "WindivertRecvEx called" << std::endl;
+    std::cout << "WindivertRecvEx called" << std::endl;
+    if (handle == INVALID_HANDLE_VALUE) {
+        std::cerr << "Invalid handle" << std::endl;
+        return FALSE;
+    }
     try {
         return wrapper.RecvEx(address, packet, packetLen, recvLen, flags, addrLen, lpOverlapped);
     }
@@ -93,6 +98,10 @@ extern "C" __declspec(dllexport) BOOL WINAPI WindivertSend(
     const WINDIVERT_ADDRESS* address
 ) {
     std::cout << "WindivertSend called" << std::endl;
+    if (handle == INVALID_HANDLE_VALUE) {
+        std::cerr << "Invalid handle" << std::endl;
+        return FALSE;
+    }
     try {
         return wrapper.Send(address, packet, packetLen, sendLen);
     }
@@ -117,6 +126,10 @@ extern "C" __declspec(dllexport) BOOL WINAPI WindivertSendEx(
     LPOVERLAPPED lpOverlapped
 ) {
     std::cout << "WindivertSendEx called" << std::endl;
+    if (handle == INVALID_HANDLE_VALUE) {
+        std::cerr << "Invalid handle" << std::endl;
+        return FALSE;
+    }
     try {
         return wrapper.SendEx(address, packet, packetLen, sendLen, flags, addrLen, lpOverlapped);
     }

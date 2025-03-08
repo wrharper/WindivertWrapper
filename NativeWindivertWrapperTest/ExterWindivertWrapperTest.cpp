@@ -1,53 +1,57 @@
 #include "pch.h"
 #include "WindivertWrapper.h"
+#include "WindivertWrapperExtern.cpp"
 #include <iostream>
 #include <stdexcept>
 #include <Windows.h>
 #include <string> // Include the string header for std::to_string
 
-void TestWinDivertOpenAndClose() {
+void TestWinDivertOpenAndCloseEx() {
     std::cout << "Creating WindivertWrapper instance for TestWinDivertOpenAndClose" << std::endl;
-    WindivertWrapper wrapper;
+    WindivertWrapper* wrapper = CreateWindivertWrapperEx();
     std::cout << "WindivertWrapper instance created for TestWinDivertOpenAndClose" << std::endl;
     const char* filter = "true";
     WINDIVERT_LAYER layer = WINDIVERT_LAYER_NETWORK;
     INT16 priority = 0;
     UINT64 flags = 0;
 
-    HANDLE handle = wrapper.Open(filter, layer, priority, flags);
+    HANDLE handle = OpenEx(wrapper, filter, layer, priority, flags);
     if (handle == INVALID_HANDLE_VALUE) {
         std::cerr << "Failed to open WinDivert handle" << std::endl;
+        DestroyWindivertWrapperEx(wrapper);
         return;
     }
 
     std::cout << "Open: Success" << std::endl;
 
-    wrapper.Close();
+    CloseEx(wrapper);
 
     std::cout << "Close: Success" << std::endl;
+    DestroyWindivertWrapperEx(wrapper);
 }
 
-void TestWinDivertRecv() {
+void TestWinDivertRecvEx() {
     std::cout << "Creating WindivertWrapper instance for TestWinDivertRecv" << std::endl;
-    WindivertWrapper wrapper;
+    WindivertWrapper* wrapper = CreateWindivertWrapperEx();
     std::cout << "WindivertWrapper instance created for TestWinDivertRecv" << std::endl;
     const char* filter = "true";
     WINDIVERT_LAYER layer = WINDIVERT_LAYER_NETWORK;
     INT16 priority = 0;
     UINT64 flags = 0;
 
-    HANDLE handle = wrapper.Open(filter, layer, priority, flags);
+    HANDLE handle = OpenEx(wrapper, filter, layer, priority, flags);
     if (handle == INVALID_HANDLE_VALUE) {
         std::cerr << "Failed to open WinDivert handle" << std::endl;
+        DestroyWindivertWrapperEx(wrapper);
         return;
     }
 
     std::cout << "Open: Success" << std::endl;
 
-    if (!wrapper.SetParam(WINDIVERT_PARAM_QUEUE_LEN, 8192)) {
+    if (!SetParamEx(wrapper, WINDIVERT_PARAM_QUEUE_LEN, 8192)) {
         std::cerr << "Failed to set queue length" << std::endl;
     }
-    if (!wrapper.SetParam(WINDIVERT_PARAM_QUEUE_TIME, 2048)) {
+    if (!SetParamEx(wrapper, WINDIVERT_PARAM_QUEUE_TIME, 2048)) {
         std::cerr << "Failed to set queue time" << std::endl;
     }
 
@@ -56,7 +60,7 @@ void TestWinDivertRecv() {
     std::unique_ptr<char[]> packet(new char[65535]);
     UINT recvLen = 0;
 
-    BOOL result = wrapper.Recv(&address, packet.get(), 65535, &recvLen);
+    BOOL result = RecvEx(wrapper, &address, packet.get(), 65535, &recvLen);
     if (result) {
         std::cout << "Packet received. Length: " << recvLen << std::endl;
     }
@@ -67,21 +71,23 @@ void TestWinDivertRecv() {
 
     std::cout << "Press Enter to exit...";
     std::cin.get();
-    wrapper.Close();
+    CloseEx(wrapper);
+    DestroyWindivertWrapperEx(wrapper);
 }
 
-void TestWinDivertSend() {
+void TestWinDivertSendEx() {
     std::cout << "Creating WindivertWrapper instance for TestWinDivertSend" << std::endl;
-    WindivertWrapper wrapper;
+    WindivertWrapper* wrapper = CreateWindivertWrapperEx();
     std::cout << "WindivertWrapper instance created for TestWinDivertSend" << std::endl;
     const char* filter = "true";
     WINDIVERT_LAYER layer = WINDIVERT_LAYER_NETWORK;
     INT16 priority = 0;
     UINT64 flags = 0;
 
-    HANDLE handle = wrapper.Open(filter, layer, priority, flags);
+    HANDLE handle = OpenEx(wrapper, filter, layer, priority, flags);
     if (handle == INVALID_HANDLE_VALUE) {
         std::cerr << "Failed to open WinDivert handle" << std::endl;
+        DestroyWindivertWrapperEx(wrapper);
         return;
     }
 
@@ -101,7 +107,7 @@ void TestWinDivertSend() {
     UINT packetLen = 20; // Explicitly set the packet length
     UINT sendLen = 0;
 
-    BOOL result = wrapper.Send(&address, sendPacket.get(), packetLen, &sendLen);
+    BOOL result = SendEx(wrapper, &address, sendPacket.get(), packetLen, &sendLen);
     if (result) {
         std::cout << "Packet sent. Length: " << sendLen << std::endl;
     }
@@ -120,10 +126,11 @@ void TestWinDivertSend() {
 
     std::cout << "Press Enter to exit...";
     std::cin.get();
-    wrapper.Close();
+    CloseEx(wrapper);
+    DestroyWindivertWrapperEx(wrapper);
 }
 
-void TestHelperCalcChecksums(WindivertWrapper& wrapper) {
+void TestHelperCalcChecksumsEx(WindivertWrapper* wrapper) {
     std::unique_ptr<char[]> packet(new char[20]);
     memset(packet.get(), 0, 20);
 
@@ -134,7 +141,7 @@ void TestHelperCalcChecksums(WindivertWrapper& wrapper) {
     packet[9] = 0x06; // Protocol (TCP)
 
     WINDIVERT_ADDRESS addr;
-    if (wrapper.HelperCalcChecksums(packet.get(), 20, &addr, 0)) {
+    if (HelperCalcChecksumsEx(wrapper, packet.get(), 20, &addr, 0)) {
         std::cout << "Checksums calculated successfully" << std::endl;
     }
     else {
@@ -142,7 +149,7 @@ void TestHelperCalcChecksums(WindivertWrapper& wrapper) {
     }
 }
 
-void TestHelperDecrementTTL(WindivertWrapper& wrapper) {
+void TestHelperDecrementTTLEx(WindivertWrapper* wrapper) {
     std::unique_ptr<char[]> packet(new char[20]);
     memset(packet.get(), 0, 20);
 
@@ -152,7 +159,7 @@ void TestHelperDecrementTTL(WindivertWrapper& wrapper) {
     packet[8] = 0x40; // Initial TTL
     packet[9] = 0x06; // Protocol (TCP)
 
-    if (wrapper.HelperDecrementTTL(packet.get(), 20)) {
+    if (HelperDecrementTTLEx(wrapper, packet.get(), 20)) {
         std::cout << "TTL decremented successfully. New TTL: " << (int)packet[8] << std::endl;
     }
     else {
@@ -160,8 +167,7 @@ void TestHelperDecrementTTL(WindivertWrapper& wrapper) {
     }
 }
 
-void TestHelperEvalFilter(WindivertWrapper& wrapper) {
-    // Use the same packet from TestHelperCalcChecksums or create a new one
+void TestHelperEvalFilterEx(WindivertWrapper* wrapper) {
     std::unique_ptr<char[]> packet(new char[20]);
     memset(packet.get(), 0, 20);
 
@@ -172,66 +178,11 @@ void TestHelperEvalFilter(WindivertWrapper& wrapper) {
     packet[9] = 0x06; // Protocol (TCP)
 
     // Set source and destination addresses
-    // Source address (set it to something plausible)
-    packet[12] = 10; packet[13] = 0; packet[14] = 0; packet[15] = 1; // 10.0.0.1
-
-    // Destination address (192.168.1.1)
-    packet[16] = 192;
-    packet[17] = 168;
-    packet[18] = 1;
-    packet[19] = 1;
+    packet[12] = 10; packet[13] = 0; packet[14] = 0; packet[15] = 1; // Source: 10.0.0.1
+    packet[16] = 192; packet[17] = 168; packet[18] = 1; packet[19] = 1; // Dest: 192.168.1.1
 
     WINDIVERT_ADDRESS addr;
-    memset(&addr, 0, sizeof(addr)); // Ensure the address structure is initialized
-
-    std::cout << "Evaluating filter with packet data:" << std::endl;
-    for (int i = 0; i < 20; ++i) {
-        std::cout << std::hex << (int)packet[i] << " ";
-    }
-    std::cout << std::endl;
-
-    // Use a filter string that includes the "outbound" keyword
-    if (wrapper.HelperEvalFilter("outbound and ip.DstAddr == 192.168.1.1", packet.get(), 20, &addr)) {
-        std::cout << "Filter evaluated successfully" << std::endl;
-    }
-    else {
-        DWORD error = GetLastError();
-        std::cerr << "Failed to evaluate filter. Error: " << error << std::endl;
-
-        wchar_t* errorMsg = nullptr;
-        FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-            nullptr, error, 0, (LPWSTR)&errorMsg, 0, nullptr);
-        if (errorMsg) {
-            std::wcerr << L"Error message: " << errorMsg << std::endl;
-            LocalFree(errorMsg);
-        }
-    }
-}
-
-void TestHelperEvalFilter2(WindivertWrapper& wrapper) {
-    // Use the same packet from TestHelperCalcChecksums or create a new one
-    std::unique_ptr<char[]> packet(new char[20]);
-    memset(packet.get(), 0, 20);
-
-    // Create a minimal valid IP packet (example: a simple IP header)
-    packet[0] = 0x45; // Version and header length
-    packet[2] = 0x00; packet[3] = 20; // Total length
-    packet[8] = 0x40; // TTL
-    packet[9] = 0x06; // Protocol (TCP)
-
-    // Set source and destination addresses
-    // Source address (set it to something plausible)
-    packet[12] = 10; packet[13] = 0; packet[14] = 0; packet[15] = 1; // 10.0.0.1
-
-    // Destination address (192.168.1.1)
-    packet[16] = 192;
-    packet[17] = 168;
-    packet[18] = 1;
-    packet[19] = 1;
-
-    // Initialize WINDIVERT_ADDRESS structure and set outbound flag
-    WINDIVERT_ADDRESS addr;
-    memset(&addr, 0, sizeof(addr)); // Ensure the address structure is initialized
+    memset(&addr, 0, sizeof(addr));
     addr.Outbound = 1; // Explicitly set outbound direction
 
     std::cout << "Evaluating filter with packet data:" << std::endl;
@@ -240,8 +191,7 @@ void TestHelperEvalFilter2(WindivertWrapper& wrapper) {
     }
     std::cout << std::endl;
 
-    // Use a filter string that includes the "outbound" keyword
-    if (wrapper.HelperEvalFilter("outbound and ip.DstAddr == 192.168.1.1", packet.get(), 20, &addr)) {
+    if (HelperEvalFilterEx(wrapper, "outbound and ip.DstAddr == 192.168.1.1", packet.get(), 20, &addr)) {
         std::cout << "Filter evaluated successfully" << std::endl;
     }
     else {
@@ -258,13 +208,12 @@ void TestHelperEvalFilter2(WindivertWrapper& wrapper) {
     }
 }
 
-
-bool TestCompileFilter(WindivertWrapper& wrapper) {
+bool TestCompileFilterEx(WindivertWrapper* wrapper) {
     char compiledFilter[1024];
     const char* errorStr = nullptr;
     UINT errorPos = 0;
 
-    if (wrapper.HelperCompileFilter("outbound and ip.DstAddr == 192.168.1.1", WINDIVERT_LAYER_NETWORK, compiledFilter, sizeof(compiledFilter), &errorStr, &errorPos)) {
+    if (HelperCompileFilterEx(wrapper, "outbound and ip.DstAddr == 192.168.1.1", WINDIVERT_LAYER_NETWORK, compiledFilter, sizeof(compiledFilter), &errorStr, &errorPos)) {
         std::cout << "Filter compiled successfully" << std::endl;
         return true;
     }
@@ -274,21 +223,21 @@ bool TestCompileFilter(WindivertWrapper& wrapper) {
     }
 }
 
-void TestHelperFunctions()
+void TestHelperFunctionsEx()
 {
     std::cout << "Creating WindivertWrapper instance for TestHelperFunctions" << std::endl;
-    WindivertWrapper wrapper;
+    WindivertWrapper* wrapper = CreateWindivertWrapperEx();
     std::cout << "WindivertWrapper instance created for TestHelperFunctions" << std::endl;
 
     // Test HelperHashPacket
     const char* testPacket = "TestPacketData";
-    UINT64 hash = wrapper.HelperHashPacket(testPacket, static_cast<UINT>(strlen(testPacket)));
+    UINT64 hash = HelperHashPacketEx(wrapper, testPacket, static_cast<UINT>(strlen(testPacket)), 0); // Corrected to use 4 arguments
     std::cout << "Hash of test packet: " << hash << std::endl;
 
     // Test HelperParseIPv4Address
     const char* ipv4AddrStr = "192.168.1.1";
     UINT32 ipv4Addr;
-    if (wrapper.HelperParseIPv4Address(ipv4AddrStr, &ipv4Addr)) {
+    if (HelperParseIPv4AddressEx(wrapper, ipv4AddrStr, &ipv4Addr)) {
         std::cout << "Parsed IPv4 address: " << ipv4Addr << std::endl;
     }
     else {
@@ -297,7 +246,7 @@ void TestHelperFunctions()
 
     // Test HelperFormatIPv4Address
     char ipv4AddrBuffer[16];
-    if (wrapper.HelperFormatIPv4Address(ipv4Addr, ipv4AddrBuffer, sizeof(ipv4AddrBuffer))) {
+    if (HelperFormatIPv4AddressEx(wrapper, ipv4Addr, ipv4AddrBuffer, sizeof(ipv4AddrBuffer))) {
         std::cout << "Formatted IPv4 address: " << ipv4AddrBuffer << std::endl;
     }
     else {
@@ -307,7 +256,7 @@ void TestHelperFunctions()
     // Test HelperParseIPv6Address
     const char* ipv6AddrStr = "2001:0db8:85a3:0000:0000:8a2e:0370:7334";
     UINT32 ipv6Addr[4];
-    if (wrapper.HelperParseIPv6Address(ipv6AddrStr, ipv6Addr)) {
+    if (HelperParseIPv6AddressEx(wrapper, ipv6AddrStr, ipv6Addr)) {
         std::cout << "Parsed IPv6 address: ";
         for (int i = 0; i < 4; ++i) {
             std::cout << ipv6Addr[i] << (i < 3 ? ":" : "\n");
@@ -319,7 +268,7 @@ void TestHelperFunctions()
 
     // Test HelperFormatIPv6Address
     char ipv6AddrBuffer[40];
-    if (wrapper.HelperFormatIPv6Address(ipv6Addr, ipv6AddrBuffer, sizeof(ipv6AddrBuffer))) {
+    if (HelperFormatIPv6AddressEx(wrapper, ipv6Addr, ipv6AddrBuffer, sizeof(ipv6AddrBuffer))) {
         std::cout << "Formatted IPv6 address: " << ipv6AddrBuffer << std::endl;
     }
     else {
@@ -327,25 +276,23 @@ void TestHelperFunctions()
     }
 
     // Test HelperCalcChecksums
-    TestHelperCalcChecksums(wrapper);
+    TestHelperCalcChecksumsEx(wrapper);
 
     // Test HelperDecrementTTL
-    TestHelperDecrementTTL(wrapper);
+    TestHelperDecrementTTLEx(wrapper);
 
     // Test HelperEvalFilter
-    if (TestCompileFilter(wrapper))
-    {
-        //TestHelperEvalFilter(wrapper);
-
-        TestHelperEvalFilter2(wrapper);
+    if (TestCompileFilterEx(wrapper)) {
+        TestHelperEvalFilterEx(wrapper);
     }
 
     std::cout << "Press Enter to exit...";
     std::cin.get();
-    wrapper.Close();
+    CloseEx(wrapper);
+    DestroyWindivertWrapperEx(wrapper);
 }
 
-int StartNativeTesting()
+int main2()
 {
     HMODULE hWinDivert = LoadLibrary(TEXT("WinDivert.dll"));
     if (!hWinDivert) {
@@ -357,10 +304,10 @@ int StartNativeTesting()
     std::cout << "WinDivert.dll loaded successfully at startup" << std::endl;
 
     try {
-        TestWinDivertOpenAndClose();
-        TestWinDivertRecv();
-        TestWinDivertSend();
-        TestHelperFunctions();
+        TestWinDivertOpenAndCloseEx();
+        TestWinDivertRecvEx();
+        TestWinDivertSendEx();
+        TestHelperFunctionsEx();
     }
     catch (const std::exception& ex) {
         std::cerr << "Exception in test functions: " << ex.what() << std::endl;
@@ -372,8 +319,4 @@ int StartNativeTesting()
     FreeLibrary(hWinDivert);
 
     return 0;
-}
-
-int main() {
-    return StartNativeTesting();
 }
