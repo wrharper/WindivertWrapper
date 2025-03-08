@@ -11,3 +11,5 @@ void TestHelperEvalFilter2Ex(WindivertWrapper& wrapper);
 void TestHelperFunctionsEx();
 void TestWinDivertSendEx();
 int StartExternTesting();
+
+void TestBlockSpecificIPEx();

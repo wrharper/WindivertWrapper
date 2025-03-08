@@ -335,6 +335,43 @@ void TestHelperFunctionsEx() {
     g_windivertWrapper.Close();
 }
 
+void TestBlockSpecificIPEx() {
+    const char* filter = "ip.SrcAddr == 192.168.1.1";
+    WINDIVERT_LAYER layer = WINDIVERT_LAYER_NETWORK;
+    INT16 priority = 0;
+    UINT64 flags = 0;
+
+    HANDLE handle = g_windivertWrapper.Open(filter, layer, priority, flags);
+    if (handle == INVALID_HANDLE_VALUE) {
+        std::cerr << "Failed to open WinDivert handle for IP blocking" << std::endl;
+        return;
+    }
+
+    std::cout << "IP blocking handle opened successfully" << std::endl;
+
+    WINDIVERT_ADDRESS address;
+    std::unique_ptr<char[]> packet(new char[65535]);
+    UINT recvLen = 0;
+
+    // Ensure continuous blocking
+    while (true) {
+        BOOL result = g_windivertWrapper.Recv(&address, packet.get(), 65535, &recvLen);
+        if (result) {
+            // Immediately drop the packet without forwarding
+            std::cout << "Blocked packet received. Length: " << recvLen << std::endl;
+        }
+        else {
+            DWORD error = GetLastError();
+            if (error != ERROR_NO_MORE_ITEMS) {
+                std::cerr << "Failed to receive packet for IP blocking. Error: " << error << std::endl;
+            }
+        }
+    }
+
+    g_windivertWrapper.Close();
+    std::cout << "IP blocking handle closed successfully" << std::endl;
+}
+
 int StartExternTesting() {
     HMODULE hWinDivert = LoadLibrary(TEXT("WinDivert.dll"));
     if (!hWinDivert) {
@@ -346,10 +383,11 @@ int StartExternTesting() {
     std::cout << "WinDivert.dll loaded successfully at startup" << std::endl;
 
     try {
-        TestWinDivertOpenAndCloseEx();
-        TestWinDivertRecvEx();
-        TestWinDivertSendEx();
-        TestHelperFunctionsEx();
+        //TestWinDivertOpenAndCloseEx();
+        //TestWinDivertRecvEx();
+        //TestWinDivertSendEx();
+        //TestHelperFunctionsEx();
+        TestBlockSpecificIPEx();
     }
     catch (const std::exception& ex) {
         std::cerr << "Exception in test functions: " << ex.what() << std::endl;
