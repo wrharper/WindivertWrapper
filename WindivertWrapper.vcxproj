@@ -123,9 +123,11 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="WindivertWrapper.h" />
+    <ClInclude Include="WindivertWrapperExtern.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="WindivertWrapper.cpp" />
+    <ClCompile Include="WindivertWrapperExtern.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

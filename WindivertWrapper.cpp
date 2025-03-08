@@ -1,7 +1,9 @@
 #include "WindivertWrapper.h"
 #include <stdexcept>
-#include <string> // For std::to_string
-#include <iostream> // For std::cerr and std::endl
+#include <string>
+#include <iostream>
+
+WindivertWrapper g_windivertWrapper; // Define the global instance
 
 WindivertWrapper::WindivertWrapper() : handle(INVALID_HANDLE_VALUE), hWinDivert(NULL) {
     try {
@@ -74,6 +76,8 @@ void WindivertWrapper::LoadWinDivertFunctions() {
         throw std::runtime_error("Failed to load one or more WinDivert helper functions.");
     }
 }
+
+// Implement other methods...
 
 HANDLE WindivertWrapper::Open(const char* filter, WINDIVERT_LAYER layer, INT16 priority, UINT64 flags) {
     handle = WinDivertOpen(filter, layer, priority, flags);

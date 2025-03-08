@@ -21,9 +21,15 @@
     <ClInclude Include="WindivertWrapper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="WindivertWrapperExtern.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="WindivertWrapper.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="WindivertWrapperExtern.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

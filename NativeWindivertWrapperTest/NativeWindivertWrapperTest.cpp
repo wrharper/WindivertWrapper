@@ -5,6 +5,8 @@
 #include <Windows.h>
 #include <string> // Include the string header for std::to_string
 
+WindivertWrapper g_windivertWrapper; // Extern instance
+
 void TestWinDivertOpenAndClose() {
     std::cout << "Creating WindivertWrapper instance for TestWinDivertOpenAndClose" << std::endl;
     WindivertWrapper wrapper;
@@ -372,8 +374,4 @@ int StartNativeTesting()
     FreeLibrary(hWinDivert);
 
     return 0;
-}
-
-int main() {
-    return StartNativeTesting();
 }
