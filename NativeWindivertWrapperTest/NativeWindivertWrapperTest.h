@@ -1,5 +1,3 @@
-#pragma once
-
 #include "WindivertWrapper.h"
 
 void TestWinDivertOpenAndClose();
@@ -10,4 +8,5 @@ void TestHelperEvalFilter(WindivertWrapper& wrapper);
 void TestHelperEvalFilter2(WindivertWrapper& wrapper);
 void TestHelperFunctions();
 void TestWinDivertSend();
+bool TestCompileFilter(WindivertWrapper& wrapper);
 int StartNativeTesting();

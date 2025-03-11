@@ -1,0 +1,1 @@
+Start-Process -FilePath "C:\Program Files\Wireshark\Wireshark.exe" -ArgumentList "-i 2"

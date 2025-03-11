@@ -6,8 +6,30 @@
 #define WINDIVERTWRAPPER_API __declspec(dllimport)
 #endif
 
+#define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
+#include <winsock2.h>
 #include "windivert.h"
+#include <cstdint>  // For standard integer types like uint32_t
+
+// Ensure the structure is packed without padding
+#pragma pack(push, 1)
+struct IPV4_HEADER {
+    uint8_t version_ihl;           // Version (4 bits) + Internet Header Length (4 bits)
+    uint8_t type_of_service;       // Type of Service
+    uint16_t total_length;         // Total Length
+    uint16_t identification;       // Identification
+    uint16_t flags_fragment;       // Flags (3 bits) + Fragment Offset (13 bits)
+    uint8_t ttl;                   // Time to Live
+    uint8_t protocol;              // Protocol
+    uint16_t header_checksum;      // Header Checksum
+    uint32_t src_addr;             // Source Address
+    uint32_t dest_addr;            // Destination Address
+};
+#pragma pack(pop)
+
+// Declare the external instance of IPV4_HEADER
+extern IPV4_HEADER globalIpv4Header;
 
 // Define the function pointer typedefs for WinDivert functions
 typedef HANDLE(WINAPI* WinDivertOpen_t)(const char*, WINDIVERT_LAYER, INT16, UINT64);
@@ -48,39 +70,40 @@ public:
     WindivertWrapper();
     ~WindivertWrapper();
 
+    // Public methods
     HANDLE Open(const char* filter, WINDIVERT_LAYER layer, INT16 priority, UINT64 flags);
     BOOL Close();
-    BOOL Recv(WINDIVERT_ADDRESS* address, PVOID packet, UINT packetLen, UINT* recvLen);
-    BOOL RecvEx(WINDIVERT_ADDRESS* address, PVOID packet, UINT packetLen, UINT* recvLen, UINT64 flags, UINT* addrLen, LPOVERLAPPED lpOverlapped);
-    BOOL Send(const WINDIVERT_ADDRESS* address, const VOID* packet, UINT packetLen, UINT* sendLen);
-    BOOL SendEx(const WINDIVERT_ADDRESS* address, const VOID* packet, UINT packetLen, UINT* sendLen, UINT64 flags, UINT addrLen, LPOVERLAPPED lpOverlapped);
-    BOOL Shutdown(WINDIVERT_SHUTDOWN how);
-    BOOL SetParam(WINDIVERT_PARAM param, UINT64 value);
-    BOOL GetParam(WINDIVERT_PARAM param, UINT64* value);
+    BOOL Recv(WINDIVERT_ADDRESS* address, PVOID packet, UINT packetLen, UINT* recvLen) const;
+    BOOL RecvEx(WINDIVERT_ADDRESS* address, PVOID packet, UINT packetLen, UINT* recvLen, UINT64 flags, UINT* addrLen, LPOVERLAPPED lpOverlapped) const;
+    BOOL Send(const WINDIVERT_ADDRESS* address, const VOID* packet, UINT packetLen, UINT* sendLen) const;
+    BOOL SendEx(const WINDIVERT_ADDRESS* address, const VOID* packet, UINT packetLen, UINT* sendLen, UINT64 flags, UINT addrLen, LPOVERLAPPED lpOverlapped) const;
+    BOOL Shutdown(WINDIVERT_SHUTDOWN how) const;
+    BOOL SetParam(WINDIVERT_PARAM param, UINT64 value) const;
+    BOOL GetParam(WINDIVERT_PARAM param, UINT64* value) const;
 
     // Helper functions
-    UINT64 HelperHashPacket(const VOID* pPacket, UINT packetLen, UINT64 seed = 0);
+    UINT64 HelperHashPacket(const VOID* pPacket, UINT packetLen, UINT64 seed = 0) const;
     BOOL HelperParsePacket(const VOID* pPacket, UINT packetLen, WINDIVERT_IPHDR** ppIpHdr, WINDIVERT_IPV6HDR** ppIpv6Hdr, UINT8* pProtocol,
         WINDIVERT_ICMPHDR** ppIcmpHdr, WINDIVERT_ICMPV6HDR** ppIcmpv6Hdr, WINDIVERT_TCPHDR** ppTcpHdr, WINDIVERT_UDPHDR** ppUdpHdr, PVOID** ppData,
-        UINT* pDataLen);
-    BOOL HelperParseIPv4Address(const char* addrStr, UINT32* pAddr);
-    BOOL HelperParseIPv6Address(const char* addrStr, UINT32* pAddr);
-    BOOL HelperFormatIPv4Address(UINT32 addr, char* buffer, UINT bufLen);
-    BOOL HelperFormatIPv6Address(const UINT32* pAddr, char* buffer, UINT bufLen);
-    BOOL HelperCalcChecksums(VOID* pPacket, UINT packetLen, WINDIVERT_ADDRESS* pAddr, UINT64 flags);
-    BOOL HelperDecrementTTL(VOID* pPacket, UINT packetLen);
-    BOOL HelperCompileFilter(const char* filter, WINDIVERT_LAYER layer, char* object, UINT objLen, const char** errorStr, UINT* errorPos);
-    BOOL HelperEvalFilter(const char* filter, const VOID* pPacket, UINT packetLen, const WINDIVERT_ADDRESS* pAddr);
-    BOOL HelperFormatFilter(const char* filter, WINDIVERT_LAYER layer, char* buffer, UINT bufLen);
+        UINT* pDataLen) const;
+    BOOL HelperParseIPv4Address(const char* addrStr, UINT32* pAddr) const;
+    BOOL HelperParseIPv6Address(const char* addrStr, UINT32* pAddr) const;
+    BOOL HelperFormatIPv4Address(UINT32 addr, char* buffer, UINT bufLen) const;
+    BOOL HelperFormatIPv6Address(const UINT32* pAddr, char* buffer, UINT bufLen) const;
+    BOOL HelperCalcChecksums(VOID* pPacket, UINT packetLen, WINDIVERT_ADDRESS* pAddr, UINT64 flags) const;
+    BOOL HelperDecrementTTL(VOID* pPacket, UINT packetLen) const;
+    BOOL HelperCompileFilter(const char* filter, WINDIVERT_LAYER layer, char* object, UINT objLen, const char** errorStr, UINT* errorPos) const;
+    BOOL HelperEvalFilter(const char* filter, const VOID* pPacket, UINT packetLen, const WINDIVERT_ADDRESS* pAddr) const;
+    BOOL HelperFormatFilter(const char* filter, WINDIVERT_LAYER layer, char* buffer, UINT bufLen) const;
 
-    UINT16 HelperNtohs(UINT16 x);
-    UINT16 HelperHtons(UINT16 x);
-    UINT32 HelperNtohl(UINT32 x);
-    UINT32 HelperHtonl(UINT32 x);
-    UINT64 HelperNtohll(UINT64 x);
-    UINT64 HelperHtonll(UINT64 x);
-    void HelperNtohIPv6Address(const UINT* inAddr, UINT* outAddr);
-    void HelperHtonIPv6Address(const UINT* inAddr, UINT* outAddr);
+    UINT16 HelperNtohs(UINT16 x) const;
+    UINT16 HelperHtons(UINT16 x) const;
+    UINT32 HelperNtohl(UINT32 x) const;
+    UINT32 HelperHtonl(UINT32 x) const;
+    UINT64 HelperNtohll(UINT64 x) const;
+    UINT64 HelperHtonll(UINT64 x) const;
+    void HelperNtohIPv6Address(const UINT* inAddr, UINT* outAddr) const;
+    void HelperHtonIPv6Address(const UINT* inAddr, UINT* outAddr) const;
 
 private:
     void LoadWinDivertFunctions();
@@ -120,5 +143,3 @@ private:
     WinDivertHelperNtohIPv6Address_t WinDivertHelperNtohIPv6Address;
     WinDivertHelperHtonIPv6Address_t WinDivertHelperHtonIPv6Address;
 };
-
-extern WindivertWrapper g_windivertWrapper;

@@ -1,10 +1,7 @@
 #include "pch.h"
 #include "WindivertWrapper.h"
 #include "WindivertWrapperExtern.h"
-#include <iostream>
-#include <stdexcept>
 #include <Windows.h>
-#include <string> // Include the string header for std::to_string
 
 extern WindivertWrapper g_windivertWrapper; // Extern instance
 
@@ -84,7 +81,7 @@ void TestWinDivertSendEx() {
 
     std::cout << "Open: Success" << std::endl;
 
-    WINDIVERT_ADDRESS address;
+    WINDIVERT_ADDRESS address{};
     // Create a minimal valid packet (example: a simple IP header)
     std::unique_ptr<char[]> sendPacket(new char[20]);
     memset(sendPacket.get(), 0, 20); // Clear the buffer
@@ -138,6 +135,7 @@ void TestHelperCalcChecksumsEx(WindivertWrapper& wrapper) {
         std::cerr << "Failed to calculate checksums" << std::endl;
     }
 }
+
 void TestHelperDecrementTTLEx(WindivertWrapper& wrapper) {
     std::unique_ptr<char[]> packet(new char[20]);
     memset(packet.get(), 0, 20);
@@ -153,6 +151,21 @@ void TestHelperDecrementTTLEx(WindivertWrapper& wrapper) {
     }
     else {
         std::cerr << "Failed to decrement TTL" << std::endl;
+    }
+}
+
+bool TestCompileFilterEx(WindivertWrapper& wrapper) {
+    char compiledFilter[1024];
+    const char* errorStr = nullptr;
+    UINT errorPos = 0;
+
+    if (wrapper.HelperCompileFilter("outbound and ip.DstAddr == 192.168.1.1", WINDIVERT_LAYER_NETWORK, compiledFilter, sizeof(compiledFilter), &errorStr, &errorPos)) {
+        std::cout << "Filter compiled successfully" << std::endl;
+        return true;
+    }
+    else {
+        std::cerr << "Failed to compile filter. Error: " << (errorStr ? errorStr : "unknown") << " at position: " << errorPos << std::endl;
+        return false;
     }
 }
 
@@ -172,10 +185,10 @@ void TestHelperEvalFilterEx(WindivertWrapper& wrapper) {
     packet[12] = 10; packet[13] = 0; packet[14] = 0; packet[15] = 1; // 10.0.0.1
 
     // Destination address (192.168.1.1)
-    packet[16] = 192;
-    packet[17] = 168;
-    packet[18] = 1;
-    packet[19] = 1;
+    packet[16] = (unsigned char)192;
+    packet[17] = (unsigned char)168;
+    packet[18] = (unsigned char)1;
+    packet[19] = (unsigned char)1;
 
     WINDIVERT_ADDRESS addr;
     memset(&addr, 0, sizeof(addr)); // Ensure the address structure is initialized
@@ -220,10 +233,10 @@ void TestHelperEvalFilter2Ex(WindivertWrapper& wrapper) {
     packet[12] = 10; packet[13] = 0; packet[14] = 0; packet[15] = 1; // 10.0.0.1
 
     // Destination address (192.168.1.1)
-    packet[16] = 192;
-    packet[17] = 168;
-    packet[18] = 1;
-    packet[19] = 1;
+    packet[16] = (unsigned char)192;
+    packet[17] = (unsigned char)168;
+    packet[18] = (unsigned char)1;
+    packet[19] = (unsigned char)1;
 
     // Initialize WINDIVERT_ADDRESS structure and set outbound flag
     WINDIVERT_ADDRESS addr;
@@ -251,21 +264,6 @@ void TestHelperEvalFilter2Ex(WindivertWrapper& wrapper) {
             std::wcerr << L"Error message: " << errorMsg << std::endl;
             LocalFree(errorMsg);
         }
-    }
-}
-
-bool TestCompileFilterEx(WindivertWrapper& wrapper) {
-    char compiledFilter[1024];
-    const char* errorStr = nullptr;
-    UINT errorPos = 0;
-
-    if (wrapper.HelperCompileFilter("outbound and ip.DstAddr == 192.168.1.1", WINDIVERT_LAYER_NETWORK, compiledFilter, sizeof(compiledFilter), &errorStr, &errorPos)) {
-        std::cout << "Filter compiled successfully" << std::endl;
-        return true;
-    }
-    else {
-        std::cerr << "Failed to compile filter. Error: " << (errorStr ? errorStr : "unknown") << " at position: " << errorPos << std::endl;
-        return false;
     }
 }
 
@@ -332,7 +330,7 @@ void TestHelperFunctionsEx() {
 
     std::cout << "Press Enter to exit...";
     std::cin.get();
-    g_windivertWrapper.Close();
+    g_windivertWrapper.Close(); // Corrected to CloseRecv
 }
 
 void TestBlockSpecificIPEx() {
@@ -341,7 +339,7 @@ void TestBlockSpecificIPEx() {
     INT16 priority = 0;
     UINT64 flags = 0;
 
-    HANDLE handle = g_windivertWrapper.Open(filter, layer, priority, flags);
+    HANDLE handle = g_windivertWrapper.Open(filter, layer, priority, flags); // Corrected to OpenRecv
     if (handle == INVALID_HANDLE_VALUE) {
         std::cerr << "Failed to open WinDivert handle for IP blocking" << std::endl;
         return;
@@ -368,7 +366,7 @@ void TestBlockSpecificIPEx() {
         }
     }
 
-    g_windivertWrapper.Close();
+    g_windivertWrapper.Close(); // Corrected to CloseRecv
     std::cout << "IP blocking handle closed successfully" << std::endl;
 }
 
@@ -383,10 +381,10 @@ int StartExternTesting() {
     std::cout << "WinDivert.dll loaded successfully at startup" << std::endl;
 
     try {
-        //TestWinDivertOpenAndCloseEx();
-        //TestWinDivertRecvEx();
-        //TestWinDivertSendEx();
-        //TestHelperFunctionsEx();
+        TestWinDivertOpenAndCloseEx();
+        TestWinDivertRecvEx();
+        TestWinDivertSendEx();
+        TestHelperFunctionsEx();
         TestBlockSpecificIPEx();
     }
     catch (const std::exception& ex) {

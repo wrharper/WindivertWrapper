@@ -3,7 +3,7 @@
 #include <string>
 #include <iostream>
 
-WindivertWrapper g_windivertWrapper; // Define the global instance
+IPV4_HEADER globalIpv4Header;
 
 WindivertWrapper::WindivertWrapper() : handle(INVALID_HANDLE_VALUE), hWinDivert(NULL) {
     try {
@@ -15,10 +15,7 @@ WindivertWrapper::WindivertWrapper() : handle(INVALID_HANDLE_VALUE), hWinDivert(
 }
 
 WindivertWrapper::~WindivertWrapper() {
-    if (handle != INVALID_HANDLE_VALUE) {
-        WinDivertClose(handle);
-        handle = INVALID_HANDLE_VALUE;
-    }
+    Close();
     if (hWinDivert) {
         FreeLibrary(hWinDivert);
         hWinDivert = NULL;
@@ -77,8 +74,6 @@ void WindivertWrapper::LoadWinDivertFunctions() {
     }
 }
 
-// Implement other methods...
-
 HANDLE WindivertWrapper::Open(const char* filter, WINDIVERT_LAYER layer, INT16 priority, UINT64 flags) {
     handle = WinDivertOpen(filter, layer, priority, flags);
     return handle;
@@ -86,80 +81,96 @@ HANDLE WindivertWrapper::Open(const char* filter, WINDIVERT_LAYER layer, INT16 p
 
 BOOL WindivertWrapper::Close() {
     if (handle != INVALID_HANDLE_VALUE) {
-        WinDivertClose(handle);
+        BOOL result = WinDivertClose(handle);
         handle = INVALID_HANDLE_VALUE;
+        return result;
     }
     return TRUE;
 }
 
-BOOL WindivertWrapper::Recv(WINDIVERT_ADDRESS* address, PVOID packet, UINT packetLen, UINT* recvLen) {
-    if (handle == INVALID_HANDLE_VALUE) {
-        return FALSE;
-    }
+BOOL WindivertWrapper::Recv(WINDIVERT_ADDRESS* address, PVOID packet, UINT packetLen, UINT* recvLen) const {
     return WinDivertRecv(handle, packet, packetLen, recvLen, address);
 }
 
-BOOL WindivertWrapper::RecvEx(WINDIVERT_ADDRESS* address, PVOID packet, UINT packetLen, UINT* recvLen, UINT64 flags, UINT* addrLen, LPOVERLAPPED lpOverlapped) {
+BOOL WindivertWrapper::RecvEx(WINDIVERT_ADDRESS* address, PVOID packet, UINT packetLen, UINT* recvLen, UINT64 flags, UINT* addrLen, LPOVERLAPPED lpOverlapped) const {
+    if (handle == INVALID_HANDLE_VALUE) {
+        return FALSE;
+    }
     return WinDivertRecvEx(handle, packet, packetLen, recvLen, flags, address, addrLen, lpOverlapped);
 }
 
-BOOL WindivertWrapper::Send(const WINDIVERT_ADDRESS* address, const VOID* packet, UINT packetLen, UINT* sendLen) {
+BOOL WindivertWrapper::Send(const WINDIVERT_ADDRESS* address, const VOID* packet, UINT packetLen, UINT* sendLen) const {
+    if (handle == INVALID_HANDLE_VALUE) {
+        return FALSE;
+    }
     return WinDivertSend(handle, packet, packetLen, sendLen, address);
 }
 
-BOOL WindivertWrapper::SendEx(const WINDIVERT_ADDRESS* address, const VOID* packet, UINT packetLen, UINT* sendLen, UINT64 flags, UINT addrLen, LPOVERLAPPED lpOverlapped) {
+BOOL WindivertWrapper::SendEx(const WINDIVERT_ADDRESS* address, const VOID* packet, UINT packetLen, UINT* sendLen, UINT64 flags, UINT addrLen, LPOVERLAPPED lpOverlapped) const {
+    if (handle == INVALID_HANDLE_VALUE) {
+        return FALSE;
+    }
     return WinDivertSendEx(handle, packet, packetLen, sendLen, flags, address, addrLen, lpOverlapped);
 }
 
-BOOL WindivertWrapper::Shutdown(WINDIVERT_SHUTDOWN how) {
-    return WinDivertShutdown(handle, how);
+BOOL WindivertWrapper::Shutdown(WINDIVERT_SHUTDOWN how) const {
+    if (handle != INVALID_HANDLE_VALUE) {
+        return WinDivertShutdown(handle, how);
+    }
+    return TRUE;
 }
 
-BOOL WindivertWrapper::SetParam(WINDIVERT_PARAM param, UINT64 value) {
-    return WinDivertSetParam(handle, param, value);
+BOOL WindivertWrapper::SetParam(WINDIVERT_PARAM param, UINT64 value) const {
+    if (handle != INVALID_HANDLE_VALUE) {
+        return WinDivertSetParam(handle, param, value);
+    }
+    return TRUE;
 }
 
-BOOL WindivertWrapper::GetParam(WINDIVERT_PARAM param, UINT64* value) {
-    return WinDivertGetParam(handle, param, value);
+BOOL WindivertWrapper::GetParam(WINDIVERT_PARAM param, UINT64* value) const {
+    if (handle != INVALID_HANDLE_VALUE) {
+        return WinDivertGetParam(handle, param, value);
+    }
+    return TRUE;
 }
 
 // Implementations for the helper functions
 
-UINT64 WindivertWrapper::HelperHashPacket(const VOID* pPacket, UINT packetLen, UINT64 seed) {
+UINT64 WindivertWrapper::HelperHashPacket(const VOID* pPacket, UINT packetLen, UINT64 seed) const {
     return WinDivertHelperHashPacket(pPacket, packetLen, seed);
 }
 
 BOOL WindivertWrapper::HelperParsePacket(const VOID* pPacket, UINT packetLen, WINDIVERT_IPHDR** ppIpHdr, WINDIVERT_IPV6HDR** ppIpv6Hdr, UINT8* pProtocol,
     WINDIVERT_ICMPHDR** ppIcmpHdr, WINDIVERT_ICMPV6HDR** ppIcmpv6Hdr, WINDIVERT_TCPHDR** ppTcpHdr, WINDIVERT_UDPHDR** ppUdpHdr, PVOID** ppData,
-    UINT* pDataLen) {
+    UINT* pDataLen) const {
     return WinDivertHelperParsePacket(pPacket, packetLen, ppIpHdr, ppIpv6Hdr, pProtocol, ppIcmpHdr, ppIcmpv6Hdr, ppTcpHdr, ppUdpHdr, ppData, pDataLen);
 }
 
-BOOL WindivertWrapper::HelperParseIPv4Address(const char* addrStr, UINT32* pAddr) {
+BOOL WindivertWrapper::HelperParseIPv4Address(const char* addrStr, UINT32* pAddr) const {
     return WinDivertHelperParseIPv4Address(addrStr, pAddr);
 }
 
-BOOL WindivertWrapper::HelperParseIPv6Address(const char* addrStr, UINT32* pAddr) {
+BOOL WindivertWrapper::HelperParseIPv6Address(const char* addrStr, UINT32* pAddr) const {
     return WinDivertHelperParseIPv6Address(addrStr, pAddr);
 }
 
-BOOL WindivertWrapper::HelperFormatIPv4Address(UINT32 addr, char* buffer, UINT bufLen) {
+BOOL WindivertWrapper::HelperFormatIPv4Address(UINT32 addr, char* buffer, UINT bufLen) const {
     return WinDivertHelperFormatIPv4Address(addr, buffer, bufLen);
 }
 
-BOOL WindivertWrapper::HelperFormatIPv6Address(const UINT32* pAddr, char* buffer, UINT bufLen) {
+BOOL WindivertWrapper::HelperFormatIPv6Address(const UINT32* pAddr, char* buffer, UINT bufLen) const {
     return WinDivertHelperFormatIPv6Address(pAddr, buffer, bufLen);
 }
 
-BOOL WindivertWrapper::HelperCalcChecksums(VOID* pPacket, UINT packetLen, WINDIVERT_ADDRESS* pAddr, UINT64 flags) {
+BOOL WindivertWrapper::HelperCalcChecksums(VOID* pPacket, UINT packetLen, WINDIVERT_ADDRESS* pAddr, UINT64 flags) const {
     return WinDivertHelperCalcChecksums(pPacket, packetLen, pAddr, flags);
 }
 
-BOOL WindivertWrapper::HelperDecrementTTL(VOID* pPacket, UINT packetLen) {
+BOOL WindivertWrapper::HelperDecrementTTL(VOID* pPacket, UINT packetLen) const {
     return WinDivertHelperDecrementTTL(pPacket, packetLen);
 }
 
-BOOL WindivertWrapper::HelperCompileFilter(const char* filter, WINDIVERT_LAYER layer, char* object, UINT objLen, const char** errorStr, UINT* errorPos) {
+BOOL WindivertWrapper::HelperCompileFilter(const char* filter, WINDIVERT_LAYER layer, char* object, UINT objLen, const char** errorStr, UINT* errorPos) const {
     BOOL result = WinDivertHelperCompileFilter(filter, layer, object, objLen, errorStr, errorPos);
     if (!result && errorStr) {
         std::cerr << "HelperCompileFilter failed. Error: " << *errorStr << " at position: " << *errorPos << std::endl;
@@ -167,42 +178,42 @@ BOOL WindivertWrapper::HelperCompileFilter(const char* filter, WINDIVERT_LAYER l
     return result;
 }
 
-BOOL WindivertWrapper::HelperEvalFilter(const char* filter, const VOID* pPacket, UINT packetLen, const WINDIVERT_ADDRESS* pAddr) {
+BOOL WindivertWrapper::HelperEvalFilter(const char* filter, const VOID* pPacket, UINT packetLen, const WINDIVERT_ADDRESS* pAddr) const {
     return WinDivertHelperEvalFilter(filter, pPacket, packetLen, pAddr);
 }
 
-BOOL WindivertWrapper::HelperFormatFilter(const char* filter, WINDIVERT_LAYER layer, char* buffer, UINT bufLen) {
+BOOL WindivertWrapper::HelperFormatFilter(const char* filter, WINDIVERT_LAYER layer, char* buffer, UINT bufLen) const {
     return WinDivertHelperFormatFilter(filter, layer, buffer, bufLen);
 }
 
-UINT16 WindivertWrapper::HelperNtohs(UINT16 x) {
+UINT16 WindivertWrapper::HelperNtohs(UINT16 x) const {
     return WinDivertHelperNtohs(x);
 }
 
-UINT16 WindivertWrapper::HelperHtons(UINT16 x) {
+UINT16 WindivertWrapper::HelperHtons(UINT16 x) const {
     return WinDivertHelperHtons(x);
 }
 
-UINT32 WindivertWrapper::HelperNtohl(UINT32 x) {
+UINT32 WindivertWrapper::HelperNtohl(UINT32 x) const {
     return WinDivertHelperNtohl(x);
 }
 
-UINT32 WindivertWrapper::HelperHtonl(UINT32 x) {
+UINT32 WindivertWrapper::HelperHtonl(UINT32 x) const {
     return WinDivertHelperHtonl(x);
 }
 
-UINT64 WindivertWrapper::HelperNtohll(UINT64 x) {
+UINT64 WindivertWrapper::HelperNtohll(UINT64 x) const {
     return WinDivertHelperNtohll(x);
 }
 
-UINT64 WindivertWrapper::HelperHtonll(UINT64 x) {
+UINT64 WindivertWrapper::HelperHtonll(UINT64 x) const {
     return WinDivertHelperHtonll(x);
 }
 
-void WindivertWrapper::HelperNtohIPv6Address(const UINT* inAddr, UINT* outAddr) {
+void WindivertWrapper::HelperNtohIPv6Address(const UINT* inAddr, UINT* outAddr) const {
     WinDivertHelperNtohIPv6Address(inAddr, outAddr);
 }
 
-void WindivertWrapper::HelperHtonIPv6Address(const UINT* inAddr, UINT* outAddr) {
+void WindivertWrapper::HelperHtonIPv6Address(const UINT* inAddr, UINT* outAddr) const {
     WinDivertHelperHtonIPv6Address(inAddr, outAddr);
 }

@@ -1,9 +1,6 @@
 #include "pch.h"
 #include "WindivertWrapper.h"
-#include <iostream>
-#include <stdexcept>
 #include <Windows.h>
-#include <string> // Include the string header for std::to_string
 
 WindivertWrapper g_windivertWrapper; // Extern instance
 
@@ -54,7 +51,6 @@ void TestWinDivertRecv() {
     }
 
     WINDIVERT_ADDRESS address;
-    // Allocate packet buffer on the heap
     std::unique_ptr<char[]> packet(new char[65535]);
     UINT recvLen = 0;
 
@@ -89,18 +85,16 @@ void TestWinDivertSend() {
 
     std::cout << "Open: Success" << std::endl;
 
-    WINDIVERT_ADDRESS address;
-    // Create a minimal valid packet (example: a simple IP header)
+    WINDIVERT_ADDRESS address{};
     std::unique_ptr<char[]> sendPacket(new char[20]);
-    memset(sendPacket.get(), 0, 20); // Clear the buffer
+    memset(sendPacket.get(), 0, 20);
 
-    // Set up a basic IP header (minimal example)
-    sendPacket[0] = 0x45; // Version and header length
-    sendPacket[2] = 0x00; sendPacket[3] = 20; // Total length
-    sendPacket[8] = 0x40; // TTL
-    sendPacket[9] = 0x06; // Protocol (TCP)
+    sendPacket[0] = 0x45;
+    sendPacket[2] = 0x00; sendPacket[3] = 20;
+    sendPacket[8] = 0x40;
+    sendPacket[9] = 0x06;
 
-    UINT packetLen = 20; // Explicitly set the packet length
+    UINT packetLen = 20;
     UINT sendLen = 0;
 
     BOOL result = wrapper.Send(&address, sendPacket.get(), packetLen, &sendLen);
@@ -178,10 +172,10 @@ void TestHelperEvalFilter(WindivertWrapper& wrapper) {
     packet[12] = 10; packet[13] = 0; packet[14] = 0; packet[15] = 1; // 10.0.0.1
 
     // Destination address (192.168.1.1)
-    packet[16] = 192;
-    packet[17] = 168;
-    packet[18] = 1;
-    packet[19] = 1;
+    packet[16] = (unsigned char)192;
+    packet[17] = (unsigned char)168;
+    packet[18] = (unsigned char)1;
+    packet[19] = (unsigned char)1;
 
     WINDIVERT_ADDRESS addr;
     memset(&addr, 0, sizeof(addr)); // Ensure the address structure is initialized
@@ -226,10 +220,10 @@ void TestHelperEvalFilter2(WindivertWrapper& wrapper) {
     packet[12] = 10; packet[13] = 0; packet[14] = 0; packet[15] = 1; // 10.0.0.1
 
     // Destination address (192.168.1.1)
-    packet[16] = 192;
-    packet[17] = 168;
-    packet[18] = 1;
-    packet[19] = 1;
+    packet[16] = (unsigned char)192;
+    packet[17] = (unsigned char)168;
+    packet[18] = (unsigned char)1;
+    packet[19] = (unsigned char)1;
 
     // Initialize WINDIVERT_ADDRESS structure and set outbound flag
     WINDIVERT_ADDRESS addr;
@@ -276,8 +270,7 @@ bool TestCompileFilter(WindivertWrapper& wrapper) {
     }
 }
 
-void TestHelperFunctions()
-{
+void TestHelperFunctions() {
     std::cout << "Creating WindivertWrapper instance for TestHelperFunctions" << std::endl;
     WindivertWrapper wrapper;
     std::cout << "WindivertWrapper instance created for TestHelperFunctions" << std::endl;
@@ -335,15 +328,13 @@ void TestHelperFunctions()
     TestHelperDecrementTTL(wrapper);
 
     // Test HelperEvalFilter
-    if (TestCompileFilter(wrapper))
-    {
-        //TestHelperEvalFilter(wrapper);
-
+    if (TestCompileFilter(wrapper)) {
         TestHelperEvalFilter2(wrapper);
     }
 
     std::cout << "Press Enter to exit...";
     std::cin.get();
+    wrapper.Close();
     wrapper.Close();
 }
 

@@ -6,7 +6,23 @@
 
 #ifndef PCH_H
 #define PCH_H
-
 // add headers that you want to pre-compile here
+#include <mutex>
+#include <iostream>
+#include <unordered_set>
+#include <string>
+#include <condition_variable>
+#include <atomic>
+#include <thread>
+#include <queue>
+#include <sstream>
+#include <stdexcept>
+#include <fstream>
+#include <unordered_map>
+
+// Define the buffer size
+constexpr auto PACKET_BUF_SIZE = 65535;
+
+std::string GetWorkingDirectory(const std::string& filePath);
 
 #endif //PCH_H

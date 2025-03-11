@@ -1,18 +1,19 @@
 #include "pch.h"
-#include <iostream>
 #include "ExternWindivertWrapperTest.h"
 #include "NativeWindivertWrapperTest.h"
+#include "AppNetworkMonitor.h" // Include the correct header
 
-void ShowMenu() {
+static void ShowMenu() {
     std::cout << "Select a test to run:" << std::endl;
     std::cout << "1. Start Extern Testing" << std::endl;
     std::cout << "2. Start Native Testing" << std::endl;
-    std::cout << "3. Exit" << std::endl;
+    std::cout << "3. App Testing" << std::endl;
+    std::cout << "4. Exit" << std::endl;
 }
 
 int main() {
     int choice = 0;
-    while (choice != 3) {
+    while (choice != 5) {
         ShowMenu();
         std::cin >> choice;
 
@@ -24,6 +25,9 @@ int main() {
             StartNativeTesting();
             break;
         case 3:
+            RunFlowLayerTest();
+            break;
+        case 4:
             std::cout << "Exiting..." << std::endl;
             break;
         default:
