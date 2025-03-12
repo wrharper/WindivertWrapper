@@ -41,7 +41,7 @@ void TestWinDivertRecv() {
 
     std::cout << "Open: Success" << std::endl;
 
-    if (!wrapper.SetParam(WINDIVERT_PARAM_QUEUE_LEN, 8192)) {
+    if (!wrapper.SetParam(WINDIVERT_PARAM_QUEUE_LENGTH, 8192)) {
         std::cerr << "Failed to set queue length" << std::endl;
     }
     if (!wrapper.SetParam(WINDIVERT_PARAM_QUEUE_TIME, 2048)) {

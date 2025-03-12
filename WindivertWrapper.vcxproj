@@ -116,10 +116,11 @@
       <PreprocessorDefinitions>NDEBUG;WINDIVERTWRAPPER_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>C:\WinDivert\dll\x64\Release\WinDivert.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>C:\WindivertWrapper\x64\Release\WinDivert.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="windivert.h" />
     <ClInclude Include="WindivertWrapper.h" />
     <ClInclude Include="WindivertWrapperExtern.h" />
   </ItemGroup>

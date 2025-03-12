@@ -10,7 +10,7 @@ std::string ConstructPidFilter(const std::vector<DWORD>& pids);
 std::string GetApplicationNameFromPid(DWORD pid);
 std::string ConvertIPv4ToString(ULONG ipAddress);
 // Function declarations
-DWORD GetProcessIdFromPacket(const WINDIVERT_ADDRESS& addr, char* packet, UINT packetLen);
+DWORD GetProcessIdFromPacket(const WINDIVERT_ADDRESS& addr, const char* packet, UINT packetLen);
 DWORD GetProcessIdFromPacket(const IPV4_HEADER* ipHeader);
 void LaunchPowerShellScript(const std::string& scriptPath);
 DWORD GetProcessIdByName(const std::wstring& processName);

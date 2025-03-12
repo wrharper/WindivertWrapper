@@ -3,6 +3,53 @@
 
 std::atomic<bool> keepMonitoringFlowNetwork;
 
+void ProcessPacketInfo(
+    const std::vector<DWORD>& targetPids,
+    const WINDIVERT_ADDRESS& addr,
+    const char* packetData,
+    UINT packetLen
+) {
+    std::cout << "Socket connect/receive event detected." << std::endl;
+
+    if (packetLen < sizeof(WINDIVERT_IPHDR)) {
+        std::cerr << "Invalid packet length (" << packetLen << " bytes). Dumping raw packet data:" << std::endl;
+        std::cout << "Packet Data (Hex): ";
+        for (UINT i = 0; i < 128 && i < packetLen; ++i) {
+            printf("%02X ", (unsigned char)packetData[i]);
+        }
+        std::cout << std::endl;
+        return;
+    }
+
+    // Initialize and parse the IP header
+    auto* ip_header = (WINDIVERT_IPHDR*)packetData;
+    std::string srcIp = ConvertIPv4ToString(ip_header->SrcAddr);
+    std::string dstIp = ConvertIPv4ToString(ip_header->DstAddr);
+    DWORD packetPid = GetProcessIdFromPacket(addr, packetData, packetLen);
+    std::string appName = GetApplicationNameFromPid(packetPid);
+
+    if (packetPid != 0 && std::find(targetPids.begin(), targetPids.end(), packetPid) != targetPids.end() && appName == "chrome.exe") {
+        std::cout << "PID: " << packetPid << " Application: " << appName << std::endl;
+        std::cout << "IP Header: SrcAddr=" << srcIp << " DstAddr=" << dstIp << std::endl;
+
+        if (ip_header->Protocol == IPPROTO_TCP) {
+            auto* tcp_header = (WINDIVERT_TCPHDR*)(packetData + (ip_header->HdrLength * 4));
+            std::cout << "TCP Header: SrcPort=" << ntohs(tcp_header->SrcPort) << " DstPort=" << ntohs(tcp_header->DstPort) << std::endl;
+        }
+        else if (ip_header->Protocol == IPPROTO_UDP) {
+            auto* udp_header = (WINDIVERT_UDPHDR*)(packetData + (ip_header->HdrLength * 4));
+            std::cout << "UDP Header: SrcPort=" << ntohs(udp_header->SrcPort) << " DstPort=" << ntohs(udp_header->DstPort) << std::endl;
+        }
+
+        std::cout << "Packet Data (Hex): ";
+        for (UINT i = 0; i < packetLen; ++i) {
+            printf("%02X ", (unsigned char)packetData[i]);
+        }
+        std::cout << std::endl;
+    }
+}
+
+
 void CaptureSocketLayerTraffic(const std::vector<DWORD>& targetPids, const PROCESS_INFORMATION& pi) {
     std::cout << "Target PIDs being used in Capture Hook: ";
     for (const auto& pid : targetPids) {
@@ -34,60 +81,36 @@ void CaptureSocketLayerTraffic(const std::vector<DWORD>& targetPids, const PROCE
             continue;
         }
 
-        // Variables used in multiple cases
-        WINDIVERT_IPHDR* ip_header = nullptr;
-        WINDIVERT_TCPHDR* tcp_header = nullptr;
-        WINDIVERT_UDPHDR* udp_header = nullptr;
-        std::string srcIp, dstIp, appName;
-        DWORD packetPid;
-
         // Process the event based on the type
         switch (addr.Event) {
+        case WINDIVERT_EVENT_SOCKET_BIND:
+            std::cout << "WINDIVERT_EVENT_SOCKET_BIND" << std::endl;
+            break;
         case WINDIVERT_EVENT_SOCKET_CONNECT:
+            std::cout << "WINDIVERT_EVENT_SOCKET_CONNECT" << std::endl;
+            break;
+        case WINDIVERT_EVENT_SOCKET_LISTEN:
+            std::cout << "WINDIVERT_EVENT_SOCKET_LISTEN" << std::endl;
+            break;
         case WINDIVERT_EVENT_SOCKET_ACCEPT:
-            std::cout << "Socket connect/accept event detected." << std::endl;
-
-            if (packetLen < sizeof(WINDIVERT_IPHDR)) {
-                std::cerr << "Invalid packet length (" << packetLen << " bytes). Dumping raw packet data:" << std::endl;
-                std::cout << "Packet Data (Hex): ";
-                for (UINT i = 0; i < 128 && i < packetLen; ++i) {
-                    printf("%02X ", (unsigned char)packet[i]);
-                }
-                std::cout << std::endl;
-                continue;
-            }
-
-            // Initialize and parse the IP header
-            ip_header = (WINDIVERT_IPHDR*)packet.get();
-            srcIp = ConvertIPv4ToString(ip_header->SrcAddr);
-            dstIp = ConvertIPv4ToString(ip_header->DstAddr);
-            packetPid = GetProcessIdFromPacket(addr, packet.get(), packetLen);
-            appName = GetApplicationNameFromPid(packetPid);
-
-            if (packetPid != 0 && std::find(targetPids.begin(), targetPids.end(), packetPid) != targetPids.end() && appName == "chrome.exe") {
-                std::cout << "PID: " << packetPid << " Application: " << appName << std::endl;
-                std::cout << "IP Header: SrcAddr=" << srcIp << " DstAddr=" << dstIp << std::endl;
-
-                if (ip_header->Protocol == IPPROTO_TCP) {
-                    tcp_header = (WINDIVERT_TCPHDR*)(packet.get() + (ip_header->HdrLength * 4));
-                    std::cout << "TCP Header: SrcPort=" << ntohs(tcp_header->SrcPort) << " DstPort=" << ntohs(tcp_header->DstPort) << std::endl;
-                }
-                else if (ip_header->Protocol == IPPROTO_UDP) {
-                    udp_header = (WINDIVERT_UDPHDR*)(packet.get() + (ip_header->HdrLength * 4));
-                    std::cout << "UDP Header: SrcPort=" << ntohs(udp_header->SrcPort) << " DstPort=" << ntohs(udp_header->DstPort) << std::endl;
-                }
-
-                std::cout << "Packet Data (Hex): ";
-                for (UINT i = 0; i < packetLen; ++i) {
-                    printf("%02X ", (unsigned char)packet[i]);
-                }
-                std::cout << std::endl;
-            }
+            std::cout << "WINDIVERT_EVENT_SOCKET_ACCEPT" << std::endl;
+            break;
+        case WINDIVERT_EVENT_SOCKET_CLOSE:
+            std::cout << "WINDIVERT_EVENT_SOCKET_CLOSE" << std::endl;
             break;
         default:
-            std::cerr << "Unknown event detected. Skipping." << std::endl;
+            std::cerr << "Unknown event detected. Event type: " << addr.Event << ". Skipping." << std::endl;
             continue;
         }
+
+        // Only process packets if the length is greater than zero
+        if (packetLen > 0) {
+            ProcessPacketInfo(targetPids, addr, packet.get(), packetLen);
+        }
+        else {
+            std::cerr << "Invalid packet length (" << packetLen << " bytes). Skipping packet processing." << std::endl;
+        }
+
     }
 
     std::cout << "Closing WinDivert handle." << std::endl;

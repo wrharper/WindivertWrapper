@@ -15,13 +15,13 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <None Include="E:\Unity\WinDivert\dll\x64\Release\WinDivert.dll" />
-  </ItemGroup>
-  <ItemGroup>
     <ClInclude Include="WindivertWrapper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="WindivertWrapperExtern.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="windivert.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

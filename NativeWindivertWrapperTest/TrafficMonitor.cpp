@@ -83,82 +83,66 @@ std::string ConvertIPv4ToString(ULONG ipAddress) {
     return oss.str();
 }
 
-DWORD GetProcessIdFromPacket(const WINDIVERT_ADDRESS& addr, char* packet, UINT packetLen) {
-    // Parse the packet to get the IP headers
+DWORD GetProcessIdFromPacket(const WINDIVERT_ADDRESS& addr, const char* packet, UINT packetLen) {
+    // Initialize and parse the IP header
     WINDIVERT_IPHDR* ip_header = (WINDIVERT_IPHDR*)packet;
+    WINDIVERT_TCPHDR* tcp_header = nullptr;
+    WINDIVERT_UDPHDR* udp_header = nullptr;
 
-    // Validate packet length
-    if (packetLen < sizeof(WINDIVERT_IPHDR)) {
-        return 0; // Invalid packet length for IP header
-    }
+    UINT ipHeaderLen = static_cast<UINT>(ip_header->HdrLength) * 4;
 
-    ULONG srcAddr = ip_header->SrcAddr;
-    USHORT srcPort = 0;
-
-    // Determine whether it's TCP or UDP
     if (ip_header->Protocol == IPPROTO_TCP) {
-        WINDIVERT_TCPHDR* tcp_header = (WINDIVERT_TCPHDR*)(packet + (ip_header->HdrLength * 4));
-        srcPort = ntohs(tcp_header->SrcPort);
-
-        // Check the TCP table for matching connections
-        ULONG ulSize = sizeof(MIB_TCPTABLE_OWNER_PID); // Minimum size initially
-        PMIB_TCPTABLE_OWNER_PID pTCPInfo = (PMIB_TCPTABLE_OWNER_PID)malloc(ulSize);
-
-        if (!pTCPInfo) {
-            std::cerr << "Memory allocation failed for TCP table." << std::endl;
+        if (packetLen >= ipHeaderLen + sizeof(WINDIVERT_TCPHDR)) {
+            tcp_header = (WINDIVERT_TCPHDR*)(packet + ipHeaderLen);
+        }
+        else {
+            std::cerr << "Packet length is insufficient for TCP header" << std::endl;
             return 0;
         }
-
-        DWORD dwResult = GetExtendedTcpTable(pTCPInfo, &ulSize, FALSE, AF_INET, TCP_TABLE_OWNER_PID_ALL, 0);
-        if (dwResult == ERROR_INSUFFICIENT_BUFFER) {
-            free(pTCPInfo);
-            pTCPInfo = (PMIB_TCPTABLE_OWNER_PID)malloc(ulSize); // Reallocate with correct size
-
-            if (pTCPInfo && GetExtendedTcpTable(pTCPInfo, &ulSize, FALSE, AF_INET, TCP_TABLE_OWNER_PID_ALL, 0) == NO_ERROR) {
-                for (DWORD i = 0; i < pTCPInfo->dwNumEntries; i++) {
-                    if (pTCPInfo->table[i].dwLocalAddr == srcAddr && ntohs((u_short)pTCPInfo->table[i].dwLocalPort) == srcPort) {
-                        DWORD pid = pTCPInfo->table[i].dwOwningPid;
-                        free(pTCPInfo);
-                        return pid;
-                    }
-                }
-            }
-        }
-        free(pTCPInfo);
     }
     else if (ip_header->Protocol == IPPROTO_UDP) {
-        WINDIVERT_UDPHDR* udp_header = (WINDIVERT_UDPHDR*)(packet + (ip_header->HdrLength * 4));
-        srcPort = ntohs(udp_header->SrcPort);
-
-        // Check the UDP table for matching connections
-        ULONG ulSize = sizeof(MIB_UDPTABLE_OWNER_PID); // Minimum size initially
-        PMIB_UDPTABLE_OWNER_PID pUDPInfo = (PMIB_UDPTABLE_OWNER_PID)malloc(ulSize);
-
-        if (!pUDPInfo) {
-            std::cerr << "Memory allocation failed for UDP table." << std::endl;
-            return 0;
+        if (packetLen >= ipHeaderLen + sizeof(WINDIVERT_UDPHDR)) {
+            udp_header = (WINDIVERT_UDPHDR*)(packet + ipHeaderLen);
         }
-
-        DWORD dwResult = GetExtendedUdpTable(pUDPInfo, &ulSize, FALSE, AF_INET, UDP_TABLE_OWNER_PID, 0);
-        if (dwResult == ERROR_INSUFFICIENT_BUFFER) {
-            free(pUDPInfo);
-            pUDPInfo = (PMIB_UDPTABLE_OWNER_PID)malloc(ulSize); // Reallocate with correct size
-
-            if (pUDPInfo && GetExtendedUdpTable(pUDPInfo, &ulSize, FALSE, AF_INET, UDP_TABLE_OWNER_PID, 0) == NO_ERROR) {
-                for (DWORD i = 0; i < pUDPInfo->dwNumEntries; i++) {
-                    if (pUDPInfo->table[i].dwLocalAddr == srcAddr && ntohs((u_short)pUDPInfo->table[i].dwLocalPort) == srcPort) {
-                        DWORD pid = pUDPInfo->table[i].dwOwningPid;
-                        free(pUDPInfo);
-                        return pid;
-                    }
-                }
-            }
-        }
-        free(pUDPInfo);
     }
 
-    // If no match found, return 0
-    return 0;
+    if (tcp_header == nullptr && ip_header->Protocol == IPPROTO_TCP) {
+        std::cerr << "tcp_header is NULL" << std::endl;
+        return 0;
+    }
+
+    // Initialize ulSize with a minimum size
+    PMIB_TCPTABLE_OWNER_PID tcpTable = nullptr;
+    ULONG ulSize = sizeof(MIB_TCPTABLE_OWNER_PID); // Ensure the size is non-zero
+    DWORD dwStatus = GetExtendedTcpTable(nullptr, &ulSize, FALSE, AF_INET, TCP_TABLE_OWNER_PID_ALL, 0);
+    if (dwStatus == ERROR_INSUFFICIENT_BUFFER) {
+        tcpTable = (PMIB_TCPTABLE_OWNER_PID)malloc(ulSize);
+        if (tcpTable == nullptr) {
+            std::cerr << "Failed to allocate memory for tcpTable" << std::endl;
+            return 0;
+        }
+        dwStatus = GetExtendedTcpTable(tcpTable, &ulSize, FALSE, AF_INET, TCP_TABLE_OWNER_PID_ALL, 0);
+    }
+    else {
+        std::cerr << "GetExtendedTcpTable failed with error: " << dwStatus << std::endl;
+        return 0;
+    }
+
+    if (dwStatus == NO_ERROR && tcpTable != nullptr) {
+        for (DWORD i = 0; i < tcpTable->dwNumEntries; i++) {
+            PMIB_TCPROW_OWNER_PID row = &tcpTable->table[i];
+            if (tcp_header != nullptr && (ip_header->SrcAddr == row->dwLocalAddr) && (ntohs(tcp_header->SrcPort) == row->dwLocalPort)) {
+                DWORD pid = row->dwOwningPid;
+                free(tcpTable);
+                return pid;
+            }
+        }
+    }
+
+    if (tcpTable != nullptr) {
+        free(tcpTable);
+    }
+    return 0;  // PID not found
 }
 
 DWORD GetProcessIdFromPacket(const IPV4_HEADER* ipHeader) {
