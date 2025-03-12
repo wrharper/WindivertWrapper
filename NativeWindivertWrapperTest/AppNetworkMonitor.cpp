@@ -2,9 +2,6 @@
 #include "TrafficMonitor.h"
 
 std::atomic<bool> keepMonitoringFlowNetwork;
-std::mutex queueMutex;
-std::condition_variable updateFilterCV;
-std::unordered_set<std::string> ipSet; // Set to store unique IP addresses
 
 void CaptureSocketLayerTraffic(const std::vector<DWORD>& targetPids, const PROCESS_INFORMATION& pi) {
     std::cout << "Target PIDs being used in Capture Hook: ";

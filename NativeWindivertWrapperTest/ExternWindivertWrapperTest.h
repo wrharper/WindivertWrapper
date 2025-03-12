@@ -1,7 +1,5 @@
 #include "pch.h"
 
-// Declare the packet queue and synchronization primitives
-
 void TestWinDivertOpenAndCloseEx();
 void TestWinDivertRecvEx();
 void TestHelperCalcChecksumsEx(WindivertWrapper& wrapper);

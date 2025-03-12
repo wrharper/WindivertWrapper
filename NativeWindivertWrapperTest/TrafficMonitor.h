@@ -2,8 +2,6 @@
 
 constexpr auto ERRBUF_SIZE = 256; // Define a suitable error buffer size if PCAP_ERRBUF_SIZE is not available;
 
-extern std::string appPath;
-extern std::string workingDir;
 extern std::atomic<bool> keepMonitoringApplication;
 
 std::string WideStringToUtf8(const std::wstring& wstr);

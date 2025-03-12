@@ -35,6 +35,8 @@
 // Define the buffer size
 constexpr auto PACKET_BUF_SIZE = 65535;
 
+extern std::string appPath;
+extern std::string workingDir;
 std::string GetWorkingDirectory(const std::string& filePath);
 
 #endif //PCH_H

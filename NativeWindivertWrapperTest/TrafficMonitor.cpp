@@ -1,9 +1,6 @@
 #include "pch.h" // Include precompiled header
 #include "TrafficMonitor.h"
 
-extern std::string appPath = ""; // Correct path to the executable
-
-extern std::string workingDir = GetWorkingDirectory(appPath); // Correct working directory for the application
 std::atomic<bool> keepMonitoringApplication;
 
 std::string WideStringToUtf8(const std::wstring& wstr) {
