@@ -76,7 +76,7 @@ extern "C" {
     __declspec(dllexport) BOOL HelperCompileFilter(const char* filter, WINDIVERT_LAYER layer, char* objectBuffer, UINT objLen, const char** errorStr, UINT* errorPos) {
         BOOL result = divertInstance.HelperCompileFilter(filter, layer, objectBuffer, objLen, errorStr, errorPos);
         if (!result && errorStr) {
-            std::cerr << "HelperCompileFilterEx failed. Error: " << *errorStr << " at position: " << *errorPos << std::endl;
+            std::cerr << "HelperCompileFilter failed. Error: " << *errorStr << " at position: " << *errorPos << std::endl;
         }
         return result;
     }
