@@ -181,58 +181,6 @@ void CaptureNetworkLayerTraffic(const PROCESS_INFORMATION& pi) {
     CloseHandle(pi.hThread);
 }
 
-void CapturePcapTraffic(const PROCESS_INFORMATION& pi) {
-    std::cout << "Monitoring traffic for target application..." << std::endl;
-
-    char errbuf[ERRBUF_SIZE]; // Use manually defined error buffer size
-
-    // Open the Npcap device for capturing
-    pcap_t* handle = pcap_open_live("\\Device\\NPF_{A9694794-6970-495C-9826-AC132E0B159D}", PACKET_BUF_SIZE, 1, 1000, errbuf);
-
-    if (!handle) {
-        std::cerr << "Failed to open pcap device: " << errbuf << std::endl;
-        return;
-    }
-
-    // Packet capturing loop
-    struct pcap_pkthdr* header;
-    const u_char* packet;
-
-    while (pcap_next_ex(handle, &header, &packet) >= 0) {
-        // Validate packet length
-        if (header->len < sizeof(IPV4_HEADER)) {
-            std::cerr << "Invalid packet length." << std::endl;
-            continue;
-        }
-
-        // Parse the IP header
-        const IPV4_HEADER* ip_header = (const IPV4_HEADER*)packet;
-        std::string srcIp = ConvertIPv4ToString(ip_header->src_addr);
-        std::string dstIp = ConvertIPv4ToString(ip_header->dest_addr);
-
-        // Determine the PID for the packet (custom logic for correlation)
-        DWORD packetPid = GetProcessIdFromPacket(ip_header); // You would implement this
-        std::string appName = GetApplicationNameFromPid(packetPid); // Assume this exists in the larger context
-
-        // Allow or block traffic based on app name
-        if (packetPid != 0 && appName == "chrome.exe") { // Replace "chrome.exe" with your target app
-            std::cout << "Blocked traffic for PID: " << packetPid << " Application: " << appName << std::endl;
-            std::cout << "IP Header: SrcAddr=" << srcIp << " DstAddr=" << dstIp << std::endl;
-            continue; // Don't reinject the packet
-        }
-
-        // Reinject packet
-        if (pcap_sendpacket(handle, packet, header->len) != 0) {
-            std::cerr << "Error reinjecting packet: " << pcap_geterr(handle) << std::endl;
-        }
-    }
-
-    // Clean up
-    pcap_close(handle);
-    CloseHandle(pi.hProcess);
-    CloseHandle(pi.hThread);
-}
-
 void RunFlowLayerTest() {
     // Set up the console control handler for clean termination
     if (!SetConsoleCtrlHandler(ConsoleHandler, TRUE)) {

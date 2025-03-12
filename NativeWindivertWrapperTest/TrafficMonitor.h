@@ -1,7 +1,6 @@
 #include "pch.h"
 #include "WindivertWrapper.h"
 #include <tchar.h>
-#include "pcap.h"
 
 constexpr auto ERRBUF_SIZE = 256; // Define a suitable error buffer size if PCAP_ERRBUF_SIZE is not available;
 

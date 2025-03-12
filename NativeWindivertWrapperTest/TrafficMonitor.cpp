@@ -61,25 +61,6 @@ std::string ConstructPidFilter(const std::vector<DWORD>& pids) {
     return filter;
 }
 
-void ListAvailableDevices() {
-    pcap_if_t* alldevs;
-    char errbuf[ERRBUF_SIZE];
-
-    if (pcap_findalldevs(&alldevs, errbuf) == -1) {
-        std::cerr << "Error finding devices: " << errbuf << std::endl;
-        return;
-    }
-
-    std::cout << "Available devices:" << std::endl;
-    for (pcap_if_t* d = alldevs; d != nullptr; d = d->next) {
-        std::cout << "- " << (d->name ? d->name : "Unknown") << std::endl;
-        if (d->description)
-            std::cout << "  Description: " << d->description << std::endl;
-    }
-
-    pcap_freealldevs(alldevs); // Free the device list
-}
-
 // Helper function to retrieve the application name from a PID
 std::string GetApplicationNameFromPid(DWORD pid) {
     if (pid == 0) {
