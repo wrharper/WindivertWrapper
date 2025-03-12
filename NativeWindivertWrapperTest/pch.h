@@ -19,6 +19,18 @@
 #include <stdexcept>
 #include <fstream>
 #include <unordered_map>
+#include <tchar.h>
+#include "WindivertWrapper.h"
+#include <TlHelp32.h>
+#include <psapi.h> // Required for QueryFullProcessImageName
+#include <iphlpapi.h>
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable: 26819)
+#pragma warning(disable: 26495)
+#include <nlohmann/json.hpp>
+#pragma warning(pop)
+#endif
 
 // Define the buffer size
 constexpr auto PACKET_BUF_SIZE = 65535;

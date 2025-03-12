@@ -1,7 +1,4 @@
 #include "WindivertWrapper.h"
-#include <stdexcept>
-#include <string>
-#include <iostream>
 
 IPV4_HEADER globalIpv4Header;
 

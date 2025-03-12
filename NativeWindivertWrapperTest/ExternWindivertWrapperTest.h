@@ -1,5 +1,4 @@
 #include "pch.h"
-#include "WindivertWrapper.h"
 
 // Declare the packet queue and synchronization primitives
 

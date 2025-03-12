@@ -11,6 +11,9 @@
 #include <winsock2.h>
 #include "windivert.h"
 #include <cstdint>  // For standard integer types like uint32_t
+#include <stdexcept>
+#include <string>
+#include <iostream>
 
 // Ensure the structure is packed without padding
 #pragma pack(push, 1)

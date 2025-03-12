@@ -1,15 +1,5 @@
 #include "pch.h" // Include precompiled header
 #include "TrafficMonitor.h"
-#include <TlHelp32.h>
-#ifdef _MSC_VER
-#pragma warning(push)
-#pragma warning(disable: 26819)
-#pragma warning(disable: 26495)
-#include <nlohmann/json.hpp>
-#pragma warning(pop)
-#endif
-#include <psapi.h> // Required for QueryFullProcessImageName
-#include <iphlpapi.h>
 
 extern std::string appPath = ""; // Correct path to the executable
 

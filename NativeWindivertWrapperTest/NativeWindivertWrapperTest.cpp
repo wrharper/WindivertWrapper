@@ -1,6 +1,4 @@
 #include "pch.h"
-#include "WindivertWrapper.h"
-#include <Windows.h>
 
 WindivertWrapper g_windivertWrapper; // Extern instance
 

@@ -1,6 +1,4 @@
 #include "pch.h"
-#include "WindivertWrapper.h"
-#include <tchar.h>
 
 constexpr auto ERRBUF_SIZE = 256; // Define a suitable error buffer size if PCAP_ERRBUF_SIZE is not available;
 
@@ -11,7 +9,6 @@ extern std::atomic<bool> keepMonitoringApplication;
 std::string WideStringToUtf8(const std::wstring& wstr);
 std::vector<DWORD> GetAllPidsByAppName(const std::string& appName);
 std::string ConstructPidFilter(const std::vector<DWORD>& pids);
-void ListAvailableDevices();
 std::string GetApplicationNameFromPid(DWORD pid);
 std::string ConvertIPv4ToString(ULONG ipAddress);
 // Function declarations
